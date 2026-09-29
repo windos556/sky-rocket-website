@@ -11,9 +11,19 @@
 // swap the fetch inside the handler and keep the same JSON shape.
 
 const FEEDS = [
-  { tag: "Fuel Market", query: '("jet fuel" OR "aviation fuel" OR "Jet A-1" OR "airline fuel") when:14d', bing: 'jet fuel OR aviation fuel OR "Jet A-1" OR airline fuel' },
-  { tag: "Aviation",    query: '(airline OR airport OR aviation OR "air cargo") when:7d',                  bing: 'airline OR airport OR aviation OR "air cargo"' }
+  { tag: "Fuel Market", query: '("jet fuel" OR "aviation fuel" OR "Jet A-1" OR "airline fuel" OR "SAF" OR "sustainable aviation fuel") when:14d',
+                          bing:  'jet fuel OR aviation fuel OR "Jet A-1" OR airline fuel OR "sustainable aviation fuel"' },
+  { tag: "Aviation",    query: '("airline industry" OR "airline flight" OR "aviation authority" OR IATA OR ICAO OR "airport operations" OR "air cargo" OR aircraft OR airliner) when:7d',
+                          bing:  '"airline industry" OR "aviation authority" OR IATA OR ICAO OR "airport operations" OR "air cargo" OR aircraft OR airliner' }
 ];
+
+// Belt-and-braces: even a well-phrased query can slip in an off-topic story
+// (e.g. "airport" showing up in a city-council piece), so re-check every
+// headline against a wider aviation vocabulary before it's allowed through.
+const AVIATION_KEYWORDS = /jet\s*fuel|aviation|airline|airport|aircraft|airliner|\bIATA\b|\bICAO\b|\bFAA\b|\bSAF\b|air\s*cargo|flight(?:s)?\b|airbus|boeing|jet\s*a-?1|fuel\s*surcharge|tarmac|runway|cockpit|pilot(?:s)?\b/i;
+function isAviationRelated(title, desc) {
+  return AVIATION_KEYWORDS.test(title) || AVIATION_KEYWORDS.test(desc);
+}
 const PER_FEED = 10;
 const TOTAL = 16;
 
@@ -105,6 +115,7 @@ async function handler(req, res) {
     const seen = new Set();
     const items = results
       .flatMap(r => (r.status === "fulfilled" ? r.value : []))
+      .filter(n => isAviationRelated(n.title, n.desc))
       .filter(n => {
         const k = n.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").slice(0, 60);
         if (seen.has(k)) return false;
