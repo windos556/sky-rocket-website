@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Fuel News | Sky Rocket Jet Fuel</title>
+<meta name="description" content="Live aviation, jet fuel and airline market updates.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="siteHeader"></div>
+
+<div class="page-hero news-hero">
+  <div class="container">
+    <span class="eyebrow" style="color:var(--amber-lt)">MARKET INTELLIGENCE</span>
+    <h1>Aviation Fuel News</h1>
+    <p>Live market and aviation developments, refreshed automatically from public industry news feeds.</p>
+  </div>
+</div>
+
+<main class="news-page-main">
+  <div class="container">
+    <div class="live-bar">
+      <div><span class="live-dot"></span><strong>LIVE FEED</strong><span id="newsStatus">Connecting to aviation news sources…</span></div>
+      <button id="refreshNews" class="refresh-btn">Refresh now</button>
+    </div>
+    <div class="news-filters" id="newsFilters">
+      <button class="news-filter-btn active" data-filter="All">All</button>
+      <button class="news-filter-btn" data-filter="Fuel Market">Fuel Market</button>
+      <button class="news-filter-btn" data-filter="Aviation">Aviation</button>
+    </div>
+    <div class="mag-featured" id="featuredNews"></div>
+    <div class="news-grid" id="liveNews"></div>
+    <div class="news-disclaimer">News headlines and links are pulled from public RSS/news sources. Sky Rocket Jet Fuel does not publish or alter the underlying articles.</div>
+  </div>
+</main>
+
+<div id="siteFooter"></div>
+<script src="shared.js"></script>
+</body>
+</html>
