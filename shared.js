@@ -202,6 +202,83 @@ function initReveal(){
   cards.forEach(x=>io.observe(x));
 }
 
+/* ---------- quick lead popup: logo + blurb + name/phone/email, shown once per visit on the homepage ---------- */
+function initLeadPopup(){
+  if(currentPage() !== "index.html") return;
+  if(sessionStorage.getItem("leadPopupShown")) return;
+
+  const wrap = document.createElement("div");
+  wrap.id = "leadPopup";
+  wrap.className = "lead-popup";
+  wrap.innerHTML = `
+    <div class="lead-popup-card">
+      <button class="lead-popup-close" id="leadPopupClose" aria-label="Close">&times;</button>
+      <div class="lead-popup-left">
+        <img src="https://i.imgur.com/4m34hJm.png" alt="Sky Rocket Jet Fuel" class="lead-popup-logo" onerror="this.style.display='none'"/>
+        <p>Sky Rocket Jet Fuel delivers expert flight support, permits, fueling and charter solutions with reliability, speed and global operational excellence.</p>
+      </div>
+      <form class="lead-popup-right" id="leadPopupForm">
+        <input type="text" id="lp-name" placeholder="Name" required/>
+        <input type="tel" id="lp-phone" placeholder="Phone" required/>
+        <input type="email" id="lp-email" placeholder="Email Address" required/>
+        <input type="text" id="lp-website" name="website" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" aria-hidden="true"/>
+        <p class="lead-popup-error" id="leadPopupError" style="display:none"></p>
+        <button type="submit" class="lead-popup-submit" id="leadPopupSubmit">SUBMIT</button>
+      </form>
+    </div>`;
+  document.body.appendChild(wrap);
+
+  function close(){
+    wrap.classList.remove("open");
+    sessionStorage.setItem("leadPopupShown", "1");
+    setTimeout(()=>wrap.remove(), 350);
+  }
+  setTimeout(()=>wrap.classList.add("open"), 1200);
+  wrap.addEventListener("click", e=>{ if(e.target === wrap) close(); });
+  document.getElementById("leadPopupClose").addEventListener("click", close);
+  document.addEventListener("keydown", e=>{ if(e.key === "Escape" && wrap.classList.contains("open")) close(); });
+
+  document.getElementById("leadPopupForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    const name = document.getElementById("lp-name").value.trim();
+    const phone = document.getElementById("lp-phone").value.trim();
+    const email = document.getElementById("lp-email").value.trim();
+    const website = document.getElementById("lp-website").value;
+    const errorEl = document.getElementById("leadPopupError");
+    const btn = document.getElementById("leadPopupSubmit");
+    errorEl.style.display = "none";
+
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+      errorEl.textContent = "Please enter a valid email address.";
+      errorEl.style.display = "block";
+      return;
+    }
+
+    btn.disabled = true; btn.textContent = "SENDING…";
+    try{
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "quick-lead", name, email, phone, website })
+      });
+      const result = await res.json().catch(()=>({ok:false}));
+      if(result.ok){
+        wrap.querySelector(".lead-popup-left").insertAdjacentHTML("beforeend", '<p class="lead-popup-thanks">Thanks — our team will reach out shortly.</p>');
+        document.getElementById("leadPopupForm").style.display = "none";
+        setTimeout(close, 2200);
+      } else {
+        errorEl.textContent = result.error || "Something went wrong. Please try again.";
+        errorEl.style.display = "block";
+        btn.disabled = false; btn.textContent = "SUBMIT";
+      }
+    } catch(_){
+      errorEl.textContent = "Couldn't reach the server. Please try again.";
+      errorEl.style.display = "block";
+      btn.disabled = false; btn.textContent = "SUBMIT";
+    }
+  });
+}
+
 /* ---------- contact form: posts to contact-handler.php, no email client needed ---------- */
 function initContactForm(){
   const btn = document.getElementById("f-submit-btn");
@@ -695,6 +772,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
   initPageHero();
   initScrollProgress();
   initPageTransitions();
+  initLeadPopup();
   renderWorldMap("worldMap");
   if(document.getElementById("liveNews") || document.getElementById("homeNews")){
     loadNews();
