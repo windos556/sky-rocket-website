@@ -202,7 +202,7 @@ function initReveal(){
   cards.forEach(x=>io.observe(x));
 }
 
-/* ---------- contact form: actually works now ---------- */
+/* ---------- contact form: posts to contact-handler.php, no email client needed ---------- */
 function initContactForm(){
   const btn = document.getElementById("f-submit-btn");
   if(!btn) return;
@@ -213,14 +213,16 @@ function initContactForm(){
   const phoneEl = document.getElementById("f-phone");
   const serviceEl = document.getElementById("f-service");
   const icaoEl = document.getElementById("f-icao");
+  const websiteEl = document.getElementById("f-website"); /* honeypot, always empty for real visitors */
   const errorEl = document.getElementById("form-error");
   const okEl = document.getElementById("form-ok");
 
-  btn.addEventListener("click", ()=>{
+  btn.addEventListener("click", async ()=>{
     const name = (nameEl.value || "").trim();
     const email = (emailEl.value || "").trim();
     const message = (msgEl.value || "").trim();
     errorEl.style.display = "none";
+    okEl.style.display = "none";
 
     if(!name || !email || !message){
       errorEl.textContent = "Please fill in your name, email, and message.";
@@ -233,22 +235,44 @@ function initContactForm(){
       return;
     }
 
-    const subject = `Quote request — ${serviceEl.value || "General enquiry"}${icaoEl.value ? " — " + icaoEl.value : ""}`;
-    const bodyLines = [
-      `Name: ${name}`,
-      `Company: ${companyEl.value || "—"}`,
-      `Email: ${email}`,
-      `Phone / WhatsApp: ${phoneEl.value || "—"}`,
-      `Service required: ${serviceEl.value || "—"}`,
-      `Airport / ICAO code: ${icaoEl.value || "—"}`,
-      "",
-      message
-    ];
-    const mailto = `mailto:fltops@skyrocketjetfuel.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join("\n"))}`;
-    window.location.href = mailto;
+    const originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Sending…";
 
-    okEl.style.display = "block";
-    okEl.querySelector(".ok-detail").textContent = "Your email client should open with the message ready to send. If it didn't, email us directly at fltops@skyrocketjetfuel.com.";
+    const data = new URLSearchParams({
+      name, email, message,
+      company: companyEl.value || "",
+      phone: phoneEl.value || "",
+      service: serviceEl.value || "",
+      icao: icaoEl.value || "",
+      website: websiteEl ? websiteEl.value || "" : ""
+    });
+
+    try {
+      const res = await fetch("contact-handler.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: data
+      });
+      const result = await res.json().catch(()=>({ ok:false }));
+
+      if(result.ok){
+        document.getElementById("contact-form").querySelectorAll("input,select,textarea").forEach(el=>{
+          if(el.type !== "hidden") el.value = "";
+        });
+        okEl.style.display = "block";
+        okEl.querySelector(".ok-detail").textContent = "We've received your message and will get back to you shortly.";
+      } else {
+        errorEl.textContent = result.error || "Something went wrong. Please email us directly at fltops@skyrocketjetfuel.com.";
+        errorEl.style.display = "block";
+      }
+    } catch(e){
+      errorEl.textContent = "Couldn't reach the server. Please email us directly at fltops@skyrocketjetfuel.com.";
+      errorEl.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+    }
   });
 }
 
